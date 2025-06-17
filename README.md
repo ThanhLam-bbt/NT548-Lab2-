@@ -79,7 +79,7 @@ Thiết lập một quy trình CI/CD hoàn chỉnh với CodePipeline để tự
         GitHubRepo=<Tên Repo github chứa mã nguồn> \
         GitHubBranch=main \
         GitHubOAuthToken=<Personal Access Token Github> \
-        ArtifactBucket=nt548-group10-cloudformation-new \
+        ArtifactBucket=nt548--cloudformation-new \
         PipelineRoleArn=arn:aws:iam::<Mã tài khoản AWS>:role/NT548-CodePipelineRole \
         CloudFormationRoleArn=arn:aws:iam::<Mã tài khoản AWS>:role/NT548-CloudFormationExecutionRole
     ```
