@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description: Root Stack - Deploy the entire NT548.P21-Lab02 infrastructure using Nested Stacks
 
 Parameters:
@@ -40,8 +40,7 @@ Parameters:
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access
     Type: AWS::EC2::KeyPair::KeyName
-    Default: nt548.p21_lab2_yeucau2
-
+    Default: nt548.p21_lab2_bai2
 
   InstanceType:
     Description: EC2 instance type
@@ -58,13 +57,13 @@ Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/vpc.yaml
+      TemplateURL: https://nt548-group09-cloudformation-new.s3.ap-southeast-1.amazonaws.com/vpc.yaml
 
   NATStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCStack
     Properties:
-      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/nat-gateway.yaml
+      TemplateURL: https://nt548-group09-cloudformation-new.s3.ap-southeast-1.amazonaws.com/nat-gateway.yaml
       Parameters:
         PublicSubnetId: !GetAtt VPCStack.Outputs.PublicSubnetId
         ProjectName: NT548-P21-Lab02
@@ -74,13 +73,13 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: [VPCStack, NATStack]
     Properties:
-      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/route-tables.yaml
+      TemplateURL: https://nt548-group09-cloudformation-new.s3.ap-southeast-1.amazonaws.com/route-tables.yaml
 
   SecurityGroupsStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCStack
     Properties:
-      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/security-group.yaml
+      TemplateURL: https://nt548-group09-cloudformation-new.s3.ap-southeast-1.amazonaws.com/security-group.yaml
       Parameters:
         AllowedSSHIP: !Ref AllowedSSHIP
       TimeoutInMinutes: 10
@@ -89,7 +88,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: [VPCStack, RouteTablesStack, SecurityGroupsStack]
     Properties:
-      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/ec2.yaml
+      TemplateURL: https://nt548-group09-cloudformation-new.s3.ap-southeast-1.amazonaws.com/ec2.yaml
       Parameters:
         KeyName: !Ref KeyName
         InstanceType: !Ref InstanceType

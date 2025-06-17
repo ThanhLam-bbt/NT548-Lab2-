@@ -1,7 +1,9 @@
-# NT548.P21_Lab2_YeuCau2
+# NT548.P21_Lab2_Bai2
+
 # Triển khai tự động hóa kiểm thử & triển khai hạ tầng AWS với CodeBuild, CodePipeline
 
 Repository này chứa các file YAML dùng để:
+
 - Triển khai hạ tầng AWS bằng AWS CloudFormation.
 - Tự động hóa kiểm thử (lint, validate) template với AWS CodeBuild tích hợp cfn-lint, taskcat.
 - Tự động hóa build & deploy ứng dụng với AWS CodePipeline.
@@ -52,7 +54,8 @@ aws codebuild create-project \
   --artifacts type=NO_ARTIFACTS
 ```
 
-**Lưu ý:**  
+**Lưu ý:**
+
 - Hãy thay thế `<Tên user Github>`, `<Mã tài khoản AWS của bạn>` bằng thông tin tương ứng của bạn.
 - Đảm bảo file `buildspec.yml` đã có trong repo và cấu hình cfn-lint, taskcat phù hợp.
 
@@ -85,7 +88,9 @@ aws cloudformation deploy \
     PipelineRoleArn=arn:aws:iam::<Mã tài khoản AWS>:role/NT548-CodePipelineRole \
     CloudFormationRoleArn=arn:aws:iam::<Mã tài khoản AWS>:role/NT548-CloudFormationExecutionRole
 ```
-**Lưu ý:**  
+
+**Lưu ý:**
+
 - Hãy thay thế `<Tên user Github>`, `<Personal Access Token Github>`, `<Tên Repo github chứa mã nguồn> ` , `<Mã tài khoản AWS>` bằng thông tin thực tế của bạn.
 - Đảm bảo các Role đã tồn tại trong IAM.
 
