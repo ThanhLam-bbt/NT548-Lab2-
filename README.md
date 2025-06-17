@@ -1,85 +1,54 @@
-# NT548.P21_Lab2_Bai2
+NT548.P21_Lab2_Bai2: Tự động hóa CI/CD với AWS CodeBuild & CodePipeline
+Dự án này trình bày cách xây dựng quy trình tích hợp và triển khai liên tục (CI/CD) tự động trên AWS, sử dụng:
 
-# Triển khai tự động hóa kiểm thử & triển khai hạ tầng AWS với CodeBuild, CodePipeline
+- AWS CloudFormation để quản lý hạ tầng dưới dạng mã (IaC).
+- AWS CodeBuild để tự động kiểm thử các template CloudFormation với cfn-lint và taskcat.
+- AWS CodePipeline để triển khai ứng dụng tự động từ mã nguồn.
 
-Repository này chứa các file YAML dùng để:
+Chuẩn bị
+Để bắt đầu, chúng ta cần:
 
-- Triển khai hạ tầng AWS bằng AWS CloudFormation.
-- Tự động hóa kiểm thử (lint, validate) template với AWS CodeBuild tích hợp cfn-lint, taskcat.
-- Tự động hóa build & deploy ứng dụng với AWS CodePipeline.
+Tài khoản AWS với đầy đủ quyền để tạo và quản lý các dịch vụ như CloudFormation, S3, IAM, CodeBuild, CodePipeline.
+AWS CLI đã được cài đặt và cấu hình (aws configure) với quyền truy cập phù hợp.
+Các IAM role cần thiết đã được tạo sẵn.
 
----
+Triển khai
+a. Thiết lập CodeBuild để kiểm thử CloudFormation
+Kiểm thử tự động các template CloudFormation bằng cách tích hợp cfn-lint và taskcat vào CodeBuild.
 
-## Yêu cầu
+1. Tải lên template CloudFormation lên S3:
+   aws s3 mb s3://nt548-group09-cloudformation-new # Tạo bucket nếu chưa có
+   aws s3 cp modules/ec2.yaml s3://nt548-group09-cloudformation-new
+   aws s3 cp modules/nat-gateway.yaml s3://nt548-group09-cloudformation-new
+   aws s3 cp modules/route-tables.yaml s3://nt548-group09-cloudformation-new
+   aws s3 cp modules/security-group.yaml s3://nt548-group09-cloudformation-new
+   aws s3 cp modules/vpc.yaml s3://nt548-group09-cloudformation-new
+   aws s3 cp modules/root.yaml s3://nt548-group09-cloudformation-new
 
-- Tài khoản AWS với quyền đủ để tạo/điều chỉnh các dịch vụ (CloudFormation, S3, IAM, CodeBuild, CodePipeline, v.v.).
-- AWS CLI đã cài đặt trên máy cá nhân.
-- Đã cấu hình AWS CLI với quyền thích hợp (`aws configure`).
-- Đã tạo các role cần thiết trong IAM.
+2. Tạo dự án CodeBuild:
+   aws codebuild create-project \
+    --name nt548-group09-lab02-validation \
+    --source type=GITHUB,location=https://github.com/<Tên user Github>/NT548.P21_Lab2_2.git,buildspec=buildspec.yml \
+    --source-version main \
+    --environment type=LINUX_CONTAINER,computeType=BUILD_GENERAL1_SMALL,image=aws/codebuild/standard:7.0 \
+    --service-role arn:aws:iam::<Mã tài khoản AWS của bạn>:role/CodeBuildCloudFormationRole \
+    --artifacts type=NO_ARTIFACTS
 
----
+b. Xây dựng CodePipeline tự động hóa triển khai
+Thiết lập một quy trình CI/CD hoàn chỉnh với CodePipeline để tự động build và deploy ứng dụng từ mã nguồn.
 
-## a. Triển khai AWS CodeBuild tích hợp cfn-lint và taskcat
+1. Triển khai IAM Roles:
+   aws cloudformation deploy \
+    --template-file "modules/iam-roles.yaml" \
+    --stack-name "NT548-Lab2-B-IAM-Roles" \
+    --capabilities CAPABILITY_NAMED_IAM
 
-### 1. Tải các file CloudFormation template lên S3
-
-Tạo bucket mới (nếu chưa có):
-
-```bash
-aws s3 mb s3://nt548-group10-cloudformation-new
-```
-
-Upload các file module lên S3 bằng các dòng lệnh bên dưới:
-
-```bash
-aws s3 cp modules/ec2.yaml s3://nt548-group10-cloudformation-new
-aws s3 cp modules/nat-gateway.yaml s3://nt548-group10-cloudformation-new
-aws s3 cp modules/route-tables.yaml s3://nt548-group10-cloudformation-new
-aws s3 cp modules/security-group.yaml s3://nt548-group10-cloudformation-new
-aws s3 cp modules/vpc.yaml s3://nt548-group10-cloudformation-new
-aws s3 cp modules/root.yaml s3://nt548-group10-cloudformation-new
-```
-
-### 2. Tạo AWS CodeBuild Project
-
-Tạo project CodeBuild để tự động kiểm thử cfn-lint và taskcat thông qua file buildspec.yml:
-
-```bash
-aws codebuild create-project \
-  --name nt548-group10-lab02-validation \
-  --source type=GITHUB,location=https://github.com/<Tên user Github>/NT548.P21_Lab2_YeuCau2.git,buildspec=buildspec.yml \
-  --source-version main \
-  --environment type=LINUX_CONTAINER,computeType=BUILD_GENERAL1_SMALL,image=aws/codebuild/standard:7.0 \
-  --service-role arn:aws:iam::<Mã tài khoản AWS của bạn>:role/CodeBuildCloudFormationRole \
-  --artifacts type=NO_ARTIFACTS
-```
-
-**Lưu ý:**
-
-- Hãy thay thế `<Tên user Github>`, `<Mã tài khoản AWS của bạn>` bằng thông tin tương ứng của bạn.
-- Đảm bảo file `buildspec.yml` đã có trong repo và cấu hình cfn-lint, taskcat phù hợp.
-
----
-
-## b. Triển khai AWS CodePipeline tự động hóa build & deploy từ mã nguồn
-
-### 1. Triển khai IAM roles
-
-```bash
-aws cloudformation deploy \
-  --template-file "modules/iam-roles.yaml" \
-  --stack-name "NT548-Lab2-B-IAM-Roles" \
-  --capabilities CAPABILITY_NAMED_IAM
-```
-
-### 2. Triển khai CodePipeline
-
-```bash
-aws cloudformation deploy \
-  --template-file "modules/codepipeline.yaml" \
-  --stack-name "NT548-Lab2-B-CodePipeline" \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides \
+2. Triển khai CodePipeline:
+   aws cloudformation deploy \
+    --template-file "modules/codepipeline.yaml" \
+    --stack-name "NT548-Lab2-B-CodePipeline" \
+    --capabilities CAPABILITY_NAMED_IAM \
+    --parameter-overrides \
     GitHubOwner=<Tên user Github> \
     GitHubRepo=<Tên Repo github chứa mã nguồn> \
     GitHubBranch=main \
@@ -87,19 +56,3 @@ aws cloudformation deploy \
     ArtifactBucket=nt548-group10-cloudformation-new \
     PipelineRoleArn=arn:aws:iam::<Mã tài khoản AWS>:role/NT548-CodePipelineRole \
     CloudFormationRoleArn=arn:aws:iam::<Mã tài khoản AWS>:role/NT548-CloudFormationExecutionRole
-```
-
-**Lưu ý:**
-
-- Hãy thay thế `<Tên user Github>`, `<Personal Access Token Github>`, `<Tên Repo github chứa mã nguồn> ` , `<Mã tài khoản AWS>` bằng thông tin thực tế của bạn.
-- Đảm bảo các Role đã tồn tại trong IAM.
-
----
-
-## Tài liệu tham khảo
-
-- [AWS CodeBuild Documentation](https://docs.aws.amazon.com/codebuild/latest/userguide/welcome.html)
-- [AWS CodePipeline Documentation](https://docs.aws.amazon.com/codepipeline/latest/userguide/welcome.html)
-- [AWS CloudFormation Documentation](https://docs.aws.amazon.com/cloudformation/index.html)
-- [cfn-lint](https://github.com/aws-cloudformation/cfn-lint)
-- [taskcat](https://github.com/aws-quickstart/taskcat)
