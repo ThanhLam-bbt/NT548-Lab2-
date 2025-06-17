@@ -17,6 +17,7 @@ a. Thiết lập CodeBuild để kiểm thử CloudFormation
 Kiểm thử tự động các template CloudFormation bằng cách tích hợp cfn-lint và taskcat vào CodeBuild.
 
 1. Tải lên template CloudFormation lên S3:
+
    aws s3 mb s3://nt548-group09-cloudformation-new # Tạo bucket nếu chưa có
    aws s3 cp modules/ec2.yaml s3://nt548-group09-cloudformation-new
    aws s3 cp modules/nat-gateway.yaml s3://nt548-group09-cloudformation-new
@@ -26,6 +27,7 @@ Kiểm thử tự động các template CloudFormation bằng cách tích hợp 
    aws s3 cp modules/root.yaml s3://nt548-group09-cloudformation-new
 
 2. Tạo dự án CodeBuild:
+
    aws codebuild create-project \
     --name nt548-group09-lab02-validation \
     --source type=GITHUB,location=https://github.com/<Tên user Github>/NT548.P21_Lab2_2.git,buildspec=buildspec.yml \
@@ -38,12 +40,14 @@ b. Xây dựng CodePipeline tự động hóa triển khai
 Thiết lập một quy trình CI/CD hoàn chỉnh với CodePipeline để tự động build và deploy ứng dụng từ mã nguồn.
 
 1. Triển khai IAM Roles:
+
    aws cloudformation deploy \
     --template-file "modules/iam-roles.yaml" \
     --stack-name "NT548-Lab2-B-IAM-Roles" \
     --capabilities CAPABILITY_NAMED_IAM
 
 2. Triển khai CodePipeline:
+
    aws cloudformation deploy \
     --template-file "modules/codepipeline.yaml" \
     --stack-name "NT548-Lab2-B-CodePipeline" \
