@@ -1,0 +1,10 @@
+project:
+  name: nt548-lab02-rootstack
+  regions:
+    - ap-southeast-1
+  template: root.yaml
+  parameters:
+    AllowedSSHIP: "0.0.0.0/0"
+    KeyName: "nt548.p21_lab2_yeucau2"
+    InstanceType: "t2.micro"
+    AmiId: "ami-013d590bbcbfa9792"

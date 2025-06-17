@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Root Stack - Deploy the entire NT548.P21-Lab02 infrastructure using Nested Stacks
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    Description: GitHub username
+
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name
+
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub branch
+
+  GitHubOAuthToken:
+    Type: String
+    NoEcho: true
+    Description: GitHub token
+
+  ArtifactBucket:
+    Type: String
+    Description: S3 bucket to store CodePipeline artifacts
+
+  PipelineRoleArn:
+    Type: String
+    Description: IAM role ARN for CodePipeline
+
+  CloudFormationRoleArn:
+    Type: String
+    Description: IAM role ARN for CloudFormation
+
+  AllowedSSHIP:
+    Description: The IP address allowed to SSH to the public EC2 instances
+    Type: String
+    Default: 0.0.0.0/0
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: nt548.p21_lab2_yeucau2
+
+
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.medium
+    AllowedValues: [t2.micro, t2.small, t2.medium]
+
+  AmiId:
+    Description: Amazon Linux 2 AMI in ap-southeast-1
+    Type: AWS::EC2::Image::Id
+    Default: ami-013d590bbcbfa9792
+
+Resources:
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/vpc.yaml
+
+  NATStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCStack
+    Properties:
+      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/nat-gateway.yaml
+      Parameters:
+        PublicSubnetId: !GetAtt VPCStack.Outputs.PublicSubnetId
+        ProjectName: NT548-P21-Lab02
+      TimeoutInMinutes: 10
+
+  RouteTablesStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [VPCStack, NATStack]
+    Properties:
+      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/route-tables.yaml
+
+  SecurityGroupsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCStack
+    Properties:
+      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/security-group.yaml
+      Parameters:
+        AllowedSSHIP: !Ref AllowedSSHIP
+      TimeoutInMinutes: 10
+
+  EC2Stack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [VPCStack, RouteTablesStack, SecurityGroupsStack]
+    Properties:
+      TemplateURL: https://nt548-group10-cloudformation-new.s3.ap-southeast-1.amazonaws.com/ec2.yaml
+      Parameters:
+        KeyName: !Ref KeyName
+        InstanceType: !Ref InstanceType
+        AmiId: !Ref AmiId
+      TimeoutInMinutes: 10
+
+Outputs:
+  PublicInstanceIP:
+    Description: Public EC2 Instance IP
+    Value: !GetAtt EC2Stack.Outputs.PublicInstanceIP
+
+  PrivateInstancePrivateIP:
+    Description: Private EC2 Instance IP
+    Value: !GetAtt EC2Stack.Outputs.PrivateInstancePrivateIP

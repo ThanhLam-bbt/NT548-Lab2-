@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: IAM Roles for CodePipeline and CloudFormation deployment
+
+Resources:
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: NT548-CodePipelineRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodePipelinePermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - codebuild:*
+                  - cloudformation:*
+                  - iam:PassRole
+                Resource: "*"
+
+  CloudFormationExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: NT548-CloudFormationExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CloudFormationPermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ec2:*
+                  - s3:*
+                  - iam:PassRole
+                  - logs:*
+                  - cloudwatch:*
+                Resource: "*"
+
+Outputs:
+  PipelineRoleArn:
+    Description: ARN of the CodePipeline role
+    Value: !GetAtt CodePipelineRole.Arn
+
+  CloudFormationRoleArn:
+    Description: ARN of the CloudFormation execution role
+    Value: !GetAtt CloudFormationExecutionRole.Arn
+    

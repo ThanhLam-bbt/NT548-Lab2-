@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates public and private route tables and associates them with subnets.
+
+Resources:
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !ImportValue VPCId
+      Tags:
+        - Key: Name
+          Value: Public Route Table
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !ImportValue InternetGatewayId
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !ImportValue NT548-P21-Lab02-PublicSubnetId
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !ImportValue VPCId
+      Tags:
+        - Key: Name
+          Value: Private Route Table
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !ImportValue NatGatewayId
+
+
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !ImportValue NT548-P21-Lab02-PrivateSubnetId
+      RouteTableId: !Ref PrivateRouteTable
+
+Outputs:
+  PublicRouteTableId:
+    Description: ID of the public route table
+    Value: !Ref PublicRouteTable
+
+  PrivateRouteTableId:
+    Description: ID of the private route table
+    Value: !Ref PrivateRouteTable

@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo Installing cfn-lint and taskcat...
+      - pip install --upgrade pip
+      - pip install cfn-lint taskcat
+
+  pre_build:
+    commands:
+      - echo Checking CloudFormation template with cfn-lint...
+      - cfn-lint root.yaml || ([ $? -eq 4 ] && echo "Only warnings, continuing..." || exit 1)
+
+  build:
+    commands:
+      - echo Running Taskcat test...
+      - taskcat test run
+
+artifacts:
+  files:
+    - '**/*'

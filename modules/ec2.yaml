@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: This template creates EC2 instances in public and private subnets
+
+Parameters:
+  KeyName:
+    Description: Name of KeyPair to enable SSH access to the instances
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: my-keypair
+
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues: [t2.micro, t2.small, t2.medium]
+
+  AmiId:
+    Description: Amazon Linux 2 AMI ID in ap-southeast-1 (Singapore)
+    Type: AWS::EC2::Image::Id
+    Default: ami-013d590bbcbfa9792
+
+Resources:
+  PublicInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !Ref AmiId
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - !ImportValue NT548-P21-Lab02-PublicEC2SecurityGroupId
+          SubnetId: !ImportValue NT548-P21-Lab02-PublicSubnetId
+      Tags: 
+        - Key: Name 
+          Value: Public Instance
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          mkdir -p /home/ec2-user/.ssh
+          chmod 700 /home/ec2-user/.ssh
+          chown ec2-user:ec2-user /home/ec2-user/.ssh
+
+  PrivateInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !Ref AmiId
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "false"
+          DeviceIndex: "0"
+          GroupSet: 
+            - !ImportValue NT548-P21-Lab02-PrivateEC2SecurityGroupId
+          SubnetId: !ImportValue NT548-P21-Lab02-PrivateSubnetId
+      Tags: 
+        - Key: Name 
+          Value: Private Instance
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+
+Outputs:
+  PublicInstanceIP:
+    Description: Public IP address of the Public Instance
+    Value: !GetAtt PublicInstance.PublicIp
+
+  PrivateInstancePrivateIP:
+    Description: Private IP address of the Private Instance
+    Value: !GetAtt PrivateInstance.PrivateIp

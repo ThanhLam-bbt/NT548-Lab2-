@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: This template create Security Groups
+
+Parameters:
+  AllowedSSHIP:
+    Description: The IP address range that can SSH to the public EC2 instances
+    Type: String
+    Default: 0.0.0.0/0  # Change to your user IP address
+
+Resources:
+  PublicEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for public EC2 instances
+      VpcId: !ImportValue VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedSSHIP
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Public EC2 Security Group
+
+  PrivateEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for private EC2 instances
+      VpcId: !ImportValue VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref PublicEC2SecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Private EC2 Security Group
+
+Outputs:
+  PublicEC2SecurityGroupId:
+    Description: The ID of the public EC2 security group
+    Value: !Ref PublicEC2SecurityGroup
+    Export:
+      Name: NT548-P21-Lab02-PublicEC2SecurityGroupId
+
+  PrivateEC2SecurityGroupId:
+    Description: The ID of the private EC2 security group
+    Value: !Ref PrivateEC2SecurityGroup
+    Export:
+      Name: NT548-P21-Lab02-PrivateEC2SecurityGroupId

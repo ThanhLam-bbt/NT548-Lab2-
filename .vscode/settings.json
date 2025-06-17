@@ -1,0 +1,29 @@
+{
+  // 1) Định nghĩa các tag cho YAML để VSCode nhận diện
+  "yaml.customTags": [
+    "!Ref scalar",
+    "!Sub scalar",
+    "!GetAtt scalar",
+    "!FindInMap scalar",
+    "!Join sequence",
+    "!Select sequence",
+    "!Split sequence",
+    "!ImportValue scalar",
+    "!Condition scalar",
+    "!Equals sequence",
+    "!If sequence",
+    "!Not sequence",
+    "!And sequence",
+    "!Or sequence",
+    "!Base64 scalar",
+    "!Cidr sequence"
+  ]
+
+  // // 2) Ánh xạ tất cả file .yml, .yaml về schema CFN chính thức
+  // //    (dùng link JSON Schema của AWS CloudFormation)
+  // "yaml.schemas": {
+  //   "https://raw.githubusercontent.com/aws-cloudformation/cfn-lint/master/schema/cfn-schema.json": [
+  //     "*.y?(a)ml"
+  //   ]
+  // }
+}

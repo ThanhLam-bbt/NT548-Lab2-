@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: This template create VPC
+
+Parameters:
+  VpcCIDR:
+    Description: IP range for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnetCIDR:
+    Description: IP range for the public subnet
+    Type: String
+    Default: 10.0.1.0/24
+
+  PrivateSubnetCIDR:
+    Description: IP range for the private subnet
+    Type: String
+    Default: 10.0.2.0/24
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Lab2 VPC
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnetCIDR
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: Public Subnet
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnetCIDR
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: Private Subnet
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Internet Gateway
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  DefaultSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: DefaultSecurityGroup
+      GroupDescription: Default security group for the VPC
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Default Security Group
+
+Outputs:
+  VPCId:
+    Description: The VPC ID
+    Value: !Ref VPC
+    Export:
+      Name: VPCId
+
+  PublicSubnetId:
+    Description: The Public Subnet ID
+    Value: !Ref PublicSubnet
+    Export:
+      Name: NT548-P21-Lab02-PublicSubnetId
+
+  PrivateSubnetId:
+    Description: The Private Subnet ID
+    Value: !Ref PrivateSubnet
+    Export:
+      Name: NT548-P21-Lab02-PrivateSubnetId
+
+  InternetGatewayId:
+    Description: The Internet Gateway ID
+    Value: !Ref InternetGateway
+    Export:
+      Name: InternetGatewayId
+
+  DefaultSecurityGroupId:
+    Description: The Default Security Group ID
+    Value: !Ref DefaultSecurityGroup
+    Export:
+      Name: DefaultSecurityGroupId

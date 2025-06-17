@@ -1,0 +1,159 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Full CodePipeline setup to build, lint, test and deploy CloudFormation templates from GitHub
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    Description: GitHub repository owner
+
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name
+
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub branch name
+
+  GitHubOAuthToken:
+    Type: String
+    NoEcho: true
+    Description: GitHub Personal Access Token
+
+  ArtifactBucket:
+    Type: String
+    Description: S3 bucket to store build artifacts
+
+  PipelineRoleArn:
+    Type: String
+    Description: IAM Role ARN used by CodePipeline to run the pipeline
+
+  CloudFormationRoleArn:
+    Type: String
+    Description: IAM Role ARN used by CloudFormation to deploy the stack
+
+Resources:
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodeBuildPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:DescribeStacks
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
+                  - cloudformation:DeleteStack
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:* 
+                Resource: '*'
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: NT548-Lab02-Build
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:5.0
+        Type: LINUX_CONTAINER
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !Ref PipelineRoleArn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHub_Source
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: 1
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                Owner: !Ref GitHubOwner
+                Repo: !Ref GitHubRepo
+                Branch: !Ref GitHubBranch
+                OAuthToken: !Ref GitHubOAuthToken
+              RunOrder: 1
+
+        - Name: BuildAndTest
+          Actions:
+            - Name: Build_Lint_Test
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              RunOrder: 1
+
+        - Name: Deploy
+          Actions:
+            - Name: DeployRootStack
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: 1
+              InputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                StackName: nt548-lab02-rootstack
+                TemplatePath: BuildOutput::root.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !Ref CloudFormationRoleArn
+                ParameterOverrides: !Sub |
+                  {
+                    "GitHubOwner": "${GitHubOwner}",
+                    "GitHubRepo": "${GitHubRepo}",
+                    "GitHubBranch": "${GitHubBranch}",
+                    "GitHubOAuthToken": "${GitHubOAuthToken}",
+                    "ArtifactBucket": "${ArtifactBucket}",
+                    "PipelineRoleArn": "${PipelineRoleArn}",
+                    "CloudFormationRoleArn": "${CloudFormationRoleArn}"
+                  }
+              RunOrder: 1
+
+Outputs:
+  PipelineName:
+    Value: !Ref Pipeline
+    Description: Name of the created CodePipeline
